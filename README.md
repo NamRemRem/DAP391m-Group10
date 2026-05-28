@@ -1,62 +1,43 @@
-#  Supplier Lead-Time Risk Prediction
+# Product Review Helpfulness Prediction
 
+A machine learning project designed to identify and rank high-quality product reviews on e-commerce platforms. This dashboard helps surface the most useful content to customers, improving trust and sales.
 
-For a full description of the project scope and research questions, see [`report/main-1.pdf`](file:///home/dre/Desktop/study/DAP/report/main-1.pdf). For the complete pipeline specification (dataset decisions, feature engineering, model choices, evaluation plan), see [`report/project\_pipeline.pdf`](file:///home/dre/Desktop/study/DAP/report/project_pipeline.pdf).
+## 🚀 Features
+- **Aggregate Dashboard**: View marketplace-wide review statistics.
+- **Sentiment Analysis**: Real-time emotional polarity scoring using VADER.
+- **ML Classifiers**: Compare **Logistic Regression** and **Random Forest** predictions.
+- **Helpfulness Leaderboard**: Surfacing the top-ranked reviews from the dataset.
+- **CI/CD Integration**: Automated linting with Black and Flake8 via GitHub Actions.
 
-## Setup
+## 📁 Project Structure
+- `app/`: Streamlit web application.
+- `src-code/`: Modular pipeline (Ingestion, Preprocessing, EDA, Modeling, Visualization).
+- `Data/`: Filtered CSVs and trained model artifacts.
+- `.github/`: CI workflows for code quality.
 
-```
-python3 -m venv .venv  
-source .venv/bin/activate        \# bash/zsh  
-\# source .venv/bin/activate.fish \# fish shell  
-  
-pip install pandas numpy scikit-learn xgboost sqlalchemy \\  
-            matplotlib seaborn plotly folium streamlit shap openpyxl
-```
+## 🛠️ Installation & Usage
+1. **Clone the repo**:
+   ```bash
+   git clone https://github.com/NamRemRem/DAP391m-Group10.git
+   cd DAP391m
+   ```
+2. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Run the Pipeline**:
+   ```bash
+   # Execute scripts 01 to 06 in order
+   python src-code/01_ingestion_cleaning.py
+   ...
+   ```
+4. **Launch the Dashboard**:
+   ```bash
+   streamlit run app/app.py
+   ```
 
-Run the pipeline in order:
+## 📊 Dataset
+This project uses the **Amazon Reviews 2023** (All Beauty category) dataset, which contains rich text data and helpfulness votes.
 
-```
-.venv/bin/python3 src-code/01\_ingestion\_cleaning.py  
-.venv/bin/python3 src-code/02\_sql\_analysis.py  
-.venv/bin/python3 src-code/03\_eda.py  
-.venv/bin/python3 src-code/04\_feature\_engineering.py  
-.venv/bin/python3 src-code/05\_modeling.py  
-.venv/bin/python3 src-code/06\_visualization\_advanced.py
-```
-
-## Pipeline Outputs
-
-- `Data/filtered/clean_data.csv` — cleaned active modeling dataset.
-- `Data/filtered/sql_outputs/*.csv` — six outputs from `sql/analysis.sql`.
-- `Data/filtered/eda_outputs/*` — class balance, numeric summaries, leakage correlation, supplier summaries, and EDA figures.
-- `Data/filtered/engineered_features.csv` and `Data/filtered/processed/*` — leakage-safe engineered features and train/test matrices.
-- `Data/filtered/model_outputs/*` — model comparison, reports, SHAP summary, predictions, and pickle artifacts.
-- `Data/filtered/visualization_outputs/*` — Plotly HTML charts and supplier scorecard CSVs for dashboard/report use.
-
-`02_sql_analysis.py` uses the older business-analysis CSVs (`customer.csv`,
-`shipment.csv`, `logistics_performance.csv`). Because `shipment.csv` does not
-ship with `supplier_id` or `carrier`, the script derives deterministic analysis
-fields before executing the SQL queries.
-
-## Streamlit App
-
-```
-.venv/bin/streamlit run app/app.py
-```
-
-The app loads `primary_model.pkl` / `xgb_model.pkl` from
-`Data/filtered/model_outputs/` and predicts Low / Medium / High supplier risk
-for a scenario entered in the sidebar.
-
-## Project Status
-
-See [`TODO.md`](TODO.md) for the full task checklist (what's done, in progress, and not started).
-
-See [`PROBLEMS.md`](PROBLEMS.md) for open decisions that need group discussion before work can proceed.
-
-**Current state:**
-- Scripts `01`-`06` run end-to-end with `.venv/bin/python3`.
-- Generated outputs are written under `Data/filtered/`.
-- Streamlit loads the saved XGBoost pickle artifacts from `Data/filtered/model_outputs/`.
-- Remaining open work is mainly report ownership, Power BI, optional logistic odds-ratio interpretation, and audit-log completion.
+## ⚖️ License
+MIT License
