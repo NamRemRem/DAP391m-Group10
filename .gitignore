@@ -1,6 +1,25 @@
-notes_DAP/
-app/.venv/
+# Python
 __pycache__/
-*.pyc
-.~lock.*
-*.log
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.env
+
+# Data and Models
+Data/raw/
+*.jsonl.gz
+*.csv
+!Data/filtered/clean_reviews.csv
+!Data/filtered/predictions.csv
+*.pkl
+*.json
+!Data/filtered/model_outputs/model_stats.json
+
+# IDEs
+.vscode/
+.idea/
+
+# Streamlit
+.streamlit/

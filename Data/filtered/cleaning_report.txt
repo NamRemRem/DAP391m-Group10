@@ -1,0 +1,12 @@
+DAP391m E-Shop ingestion report
+========================================
+Input: e-shop_clothing_2008.csv
+Rows: 165474
+Columns: 14
+
+Category counts:
+page 1 (main category)
+1    49742
+2    38408
+3    38577
+4    38747
