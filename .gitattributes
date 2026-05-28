@@ -1,0 +1,2 @@
+# Force LF line endings for all python files
+*.py text eol=lf
