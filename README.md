@@ -4,9 +4,11 @@ A machine learning project designed to identify and rank high-quality product re
 
 ## 🚀 Features
 - **Aggregate Dashboard**: View marketplace-wide review statistics.
-- **Sentiment Analysis**: Real-time emotional polarity scoring using VADER.
-- **ML Classifiers**: Compare **Logistic Regression** and **Random Forest** predictions.
-- **Helpfulness Leaderboard**: Surfacing the top-ranked reviews from the dataset.
+- **Advanced NLP**: Lemmatization, SpaCy linguistic features (POS, NER), and Readability scoring (Flesch).
+- **Flagship ML Classifier**: Optimized **XGBoost** with RandomizedSearchCV and class-weighting (scale\_pos\_weight).
+- **Model Comparison**: Evaluation of Logistic Regression, Random Forest, and XGBoost using F1-Score and Recall.
+- **Live Review Predictor**: Real-time helpfulness probability for custom text.
+- **LaTeX Reporting**: Automated research paper generation in `report/paper.tex`.
 - **CI/CD Integration**: Automated linting with Black and Flake8 via GitHub Actions.
 
 ## 📁 Project Structure

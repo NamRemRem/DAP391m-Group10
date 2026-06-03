@@ -9,6 +9,7 @@
 ## Future Enhancements
 - [ ] Support more Amazon categories (e.g., Electronics, Books)
 - [ ] Experiment with Deep Learning models (BERT, Transformers)
-- [ ] Implement automated hyperparameter tuning for Random Forest
+- [x] Implement automated hyperparameter tuning for XGBoost
+- [x] Integrate advanced linguistic features (NER, POS, Readability)
 - [ ] Add more interactive Plotly charts (e.g., Sentiment vs. Helpfulness heatmap)
 - [ ] Containerize the application using Docker
