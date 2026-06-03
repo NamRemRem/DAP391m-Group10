@@ -1,0 +1,6 @@
+sentiment_category,review_count,avg_helpful_votes
+Highly Positive,31386,1.1
+Highly Negative,2398,1.09
+Negative,3957,0.89
+Positive,8180,0.67
+Neutral,4033,0.41

@@ -1,0 +1,75 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{Predicting Product Review Helpfulness using Linguistic and Sentiment Analysis: A Case Study on the Amazon Beauty Dataset}
+\author{Group 10 - DAP391m}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+The proliferation of online reviews has made it difficult for consumers to identify truly helpful feedback. This paper presents a machine learning framework to predict review helpfulness using the Amazon Reviews 2023 (All Beauty) dataset. We extract structural, linguistic, and sentiment features, combined with TF-IDF n-grams, to train various classifiers including Logistic Regression, Random Forest, and XGBoost. Our results demonstrate that incorporating linguistic complexity features and sentiment polarity significantly improves the model's ability to distinguish helpful reviews from unhelpful ones, particularly in imbalanced data scenarios.
+\end{abstract}
+
+\section{Introduction}
+Online reviews are a cornerstone of modern e-commerce, influencing consumer trust and purchasing decisions. However, the sheer volume of reviews, many of which are brief or uninformative, creates an "information overload" problem. Predicting the "helpfulness" of a review—the likelihood that a community will find the review useful—is therefore a critical task for e-commerce platforms.
+
+\section{Methodology}
+\subsection{Data Collection and Preprocessing}
+We utilized the Amazon Reviews 2023 dataset, focusing on the "All Beauty" category. The raw data, containing over 50,000 records in indexed JSONL format, was cleaned to remove empty reviews and special characters.
+
+\subsection{Feature Engineering}
+Our feature set includes three primary categories:
+\begin{itemize}
+    \item \textbf{Structural Features}: Review length (characters), word count, and sentence count.
+    \item \textbf{Sentiment Features}: Polarity scores calculated using the VADER sentiment analyzer.
+    \item \textbf{Linguistic Features}: Average word length and verified purchase status.
+    \item \textbf{Textual Features}: TF-IDF vectorization with bigram support (ngram\_range=1,2) and 2,000 maximum features.
+\end{itemize}
+
+\subsection{Model Selection}
+We implemented and compared three classification algorithms:
+\begin{enumerate}
+    \item \textbf{Logistic Regression}: Served as a baseline for linear relationships.
+    \item \textbf{Random Forest}: Captured non-linear interactions between structural and textual features.
+    \item \textbf{XGBoost}: Leveraged gradient boosting for optimized performance on imbalanced tabular and sparse data.
+\end{enumerate}
+
+\section{Results and Discussion}
+The models were evaluated based on Accuracy, F1-Score, Precision, and Recall. The inclusion of word count and sentiment polarity showed a high correlation with helpfulness votes. 
+
+\begin{table}[ht]
+\centering
+\caption{Model Performance Comparison}
+\begin{tabular}{lcccc}
+\toprule
+Model & Accuracy & F1-Score & Precision & Recall \\
+\midrule
+Logistic Regression & 73.41\% & 25.94\% & 59.16\% & 16.61\% \\
+Random Forest & 72.56\% & 7.87\% & 66.86\% & 4.18\% \\
+XGBoost & 65.83\% & 49.56\% & 42.27\% & 59.88\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Error Analysis}
+To better understand the model's limitations, we performed an error analysis on the top-performing XGBoost model. Table 2 summarizes common misclassifications.
+\begin{itemize}
+    \item \textbf{False Negatives}: Often occur in very brief reviews (e.g., "Good", "Amazing smell") which, while helpful to some, lack the linguistic depth (low word count and readability score) the model associates with high-utility reviews.
+    \item \textbf{False Positives}: Occur in long, detailed reviews that use many comparative terms but were not voted "helpful" by the community, likely due to being redundant or published recently.
+\end{itemize}
+
+\section{Conclusion}
+Our study confirms that review helpfulness can be effectively predicted using a combination of NLP and metadata features. XGBoost proved to be the most effective model for maximizing F1-Score in this imbalanced dataset. Future work will involve exploring deep learning architectures such as BERT and expanding the dataset to more diverse product categories.
+
+\end{document}

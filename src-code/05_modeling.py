@@ -10,9 +10,11 @@ import pickle
 import json
 from pathlib import Path
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
 from scipy.sparse import hstack
-from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.model_selection import RandomizedSearchCV
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "Data" / "filtered" / "processed"
@@ -38,23 +40,84 @@ def main():
 
     model_stats = {}
 
-    # 1. Logistic Regression
-    print("Training Logistic Regression...")
-    lr = LogisticRegression(max_iter=1000, random_state=42)
-    lr.fit(X_train, y_train)
-    lr_acc = accuracy_score(y_test, lr.predict(X_test))
-    model_stats["Logistic Regression"] = float(lr_acc)
-    with open(OUT_DIR / "logistic_regression.pkl", "wb") as f:
-        pickle.dump(lr, f)
+    scale_weight = np.sum(y_train == 0) / max(np.sum(y_train == 1), 1)
 
-    # 2. Random Forest
-    print("Training Random Forest...")
-    rf = RandomForestClassifier(n_estimators=50, max_depth=10, random_state=42)
-    rf.fit(X_train, y_train)
-    rf_acc = accuracy_score(y_test, rf.predict(X_test))
-    model_stats["Random Forest"] = float(rf_acc)
-    with open(OUT_DIR / "random_forest.pkl", "wb") as f:
-        pickle.dump(rf, f)
+    param_distributions = {
+        'max_depth': [3, 5, 7],
+        'learning_rate': [0.05, 0.1, 0.2],
+        'min_child_weight': [1, 3, 5],
+        'n_estimators': [50, 100]
+    }
+    
+    models = {
+        "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
+        "Random Forest": RandomForestClassifier(n_estimators=50, max_depth=10, random_state=42),
+        "XGBoost": RandomizedSearchCV(
+            XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42, scale_pos_weight=scale_weight),
+            param_distributions=param_distributions,
+            n_iter=5, # Keep it small for fast execution
+            scoring='f1',
+            cv=3,
+            random_state=42,
+            n_jobs=-1
+        )
+    }
+
+    for name, model in models.items():
+        print(f"Training {name}...")
+        model.fit(X_train, y_train)
+        
+        # Extract best estimator if it's a grid search
+        if isinstance(model, RandomizedSearchCV):
+            print(f"Best params for {name}: {model.best_params_}")
+            model = model.best_estimator_
+            
+        y_pred = model.predict(X_test)
+        
+        acc = accuracy_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred)
+        prec = precision_score(y_test, y_pred)
+        rec = recall_score(y_test, y_pred)
+        
+        model_stats[name] = {
+            "Accuracy": float(acc),
+            "F1-Score": float(f1),
+            "Precision": float(prec),
+            "Recall": float(rec)
+        }
+        
+        filename = name.lower().replace(" ", "_") + ".pkl"
+        with open(OUT_DIR / filename, "wb") as f:
+            pickle.dump(model, f)
+            
+        # Error Analysis for XGBoost
+        if name == "XGBoost":
+            print(f"Performing Error Analysis for {name}...")
+            INPUT_CSV = PROJECT_ROOT / "Data" / "filtered" / "processed_reviews.csv"
+            if INPUT_CSV.exists():
+                orig_df = pd.read_csv(INPUT_CSV)
+                orig_y = (orig_df["helpful_vote"] >= 1).astype(int)
+                from sklearn.model_selection import train_test_split
+                _, text_test, _, _ = train_test_split(
+                    orig_df["text"].astype(str), orig_y, test_size=0.2, random_state=42, stratify=orig_y
+                )
+                
+                y_prob = model.predict_proba(X_test)[:, 1]
+                error_df = pd.DataFrame({
+                    'Original_Text': text_test.values,
+                    'Actual_Label': y_test,
+                    'Predicted_Label': y_pred,
+                    'Probability': y_prob
+                })
+                
+                fp_df = error_df[(error_df['Actual_Label'] == 0) & (error_df['Predicted_Label'] == 1)]
+                fp_df = fp_df.sort_values(by='Probability', ascending=False)
+                fp_df.head(20).to_csv(OUT_DIR / "top_20_false_positives.csv", index=False)
+                
+                fn_df = error_df[(error_df['Actual_Label'] == 1) & (error_df['Predicted_Label'] == 0)]
+                fn_df = fn_df.sort_values(by='Probability', ascending=True)
+                fn_df.head(20).to_csv(OUT_DIR / "top_20_false_negatives.csv", index=False)
+
 
     # Save Stats
     with open(OUT_DIR / "model_stats.json", "w") as f:

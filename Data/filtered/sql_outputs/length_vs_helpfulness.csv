@@ -1,0 +1,4 @@
+length_category,review_count,avg_helpful_votes
+Long (>500),5073,2.99
+Medium (100-500),23087,1.09
+Short (<100),21794,0.34

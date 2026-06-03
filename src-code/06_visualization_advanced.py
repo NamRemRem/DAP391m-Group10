@@ -26,7 +26,20 @@ def main():
     X_text = df["processed_text"].astype(str)
     X_tfidf = vectorizer.transform(X_text)
     X_meta = df[
-        ["rating", "review_length", "verified_purchase", "sentiment_score"]
+        [
+            "rating", 
+            "review_length", 
+            "word_count", 
+            "sentence_count", 
+            "avg_word_length",
+            "verified_purchase", 
+            "sentiment_score",
+            "noun_ratio",
+            "adj_ratio",
+            "ner_count",
+            "readability",
+            "comparative_count"
+        ]
     ].copy()
     X_meta["verified_purchase"] = X_meta["verified_purchase"].astype(int)
 
