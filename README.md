@@ -2,7 +2,7 @@
 
 A machine learning project designed to identify and rank high-quality product reviews on e-commerce platforms. This dashboard helps surface the most useful content to customers, improving trust and sales.
 
-## 🚀 Features
+## Features
 - **Aggregate Dashboard**: View marketplace-wide review statistics.
 - **Advanced NLP**: Lemmatization, SpaCy linguistic features (POS, NER), and Readability scoring (Flesch).
 - **Flagship ML Classifier**: Optimized **XGBoost** with RandomizedSearchCV and class-weighting (scale\_pos\_weight).
@@ -11,13 +11,13 @@ A machine learning project designed to identify and rank high-quality product re
 - **LaTeX Reporting**: Automated research paper generation in `report/paper.tex`.
 - **CI/CD Integration**: Automated linting with Black and Flake8 via GitHub Actions.
 
-## 📁 Project Structure
+## Project Structure
 - `app/`: Streamlit web application.
 - `src-code/`: Modular pipeline (Ingestion, Preprocessing, EDA, Modeling, Visualization).
 - `Data/`: Filtered CSVs and trained model artifacts.
 - `.github/`: CI workflows for code quality.
 
-## 🛠️ Installation & Usage
+## Installation & Usage
 1. **Clone the repo**:
    ```bash
    git clone https://github.com/NamRemRem/DAP391m-Group10.git
@@ -38,8 +38,8 @@ A machine learning project designed to identify and rank high-quality product re
    streamlit run app/app.py
    ```
 
-## 📊 Dataset
+## Dataset
 This project uses the **Amazon Reviews 2023** (All Beauty category) dataset, which contains rich text data and helpfulness votes.
 
-## ⚖️ License
+## License
 MIT License
