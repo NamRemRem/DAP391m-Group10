@@ -18,12 +18,15 @@ MODEL_DIR = DATA_DIR / "model_outputs"
 
 analyzer = SentimentIntensityAnalyzer()
 
+
 def clean_text(text):
-    if not isinstance(text, str): return ""
+    if not isinstance(text, str):
+        return ""
     text = text.lower()
     text = text.translate(str.maketrans("", "", string.punctuation))
     text = re.sub(r"\d+", "", text)
     return text
+
 
 def load_data():
     if not (DATA_DIR / "predictions.csv").exists():
@@ -59,12 +62,14 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.subheader("Project Info")
     st.sidebar.write("**Dataset**: Amazon All Beauty")
-    st.sidebar.write("**Features**: Rating, Length, Linguistic (Word/Sentence), Sentiment, TF-IDF")
+    st.sidebar.write(
+        "**Features**: Rating, Length, Linguistic (Word/Sentence), Sentiment, TF-IDF"
+    )
 
     # Row 1: High Level Stats
     st.subheader("📊 Model Performance & Data Overview")
     model_metrics = stats.get(model_choice, {})
-    
+
     col_a, col_b, col_c, col_d = st.columns(4)
     col_a.metric("Accuracy", f"{model_metrics.get('Accuracy', 0):.2%}")
     col_b.metric("F1-Score", f"{model_metrics.get('F1-Score', 0):.2%}")
@@ -86,7 +91,7 @@ def main():
             values="Count",
             names="Status",
             color_discrete_sequence=["#2ecc71", "#e74c3c"],
-            hole=0.4
+            hole=0.4,
         )
         st.plotly_chart(fig_pie, use_container_width=True)
 
@@ -107,9 +112,12 @@ def main():
     st.write("---")
     st.subheader("🔮 Live Review Helpfulness Predictor")
     with st.expander("Try it yourself!"):
-        user_text = st.text_area("Enter a product review text:", "This product is amazing! It really helped my skin and smells great.")
+        user_text = st.text_area(
+            "Enter a product review text:",
+            "This product is amazing! It really helped my skin and smells great.",
+        )
         user_rating = st.slider("Select Rating", 1, 5, 5)
-        
+
         if st.button("Predict Helpfulness"):
             # Load model and vectorizer
             model_file = model_choice.lower().replace(" ", "_") + ".pkl"
@@ -117,55 +125,74 @@ def main():
                 model = pickle.load(f)
             with open(MODEL_DIR / "tfidf_vectorizer.pkl", "rb") as f:
                 vectorizer = pickle.load(f)
-            
+
             # Preprocess
             from scipy.sparse import hstack
             import numpy as np
             import spacy
             from textstat import flesch_reading_ease
-            
+
             cleaned = clean_text(user_text)
             tfidf_feat = vectorizer.transform([cleaned])
-            
+
             sent_score = analyzer.polarity_scores(user_text)["compound"]
             word_count = len(user_text.split())
-            sent_count = len(re.split(r'[.!?]+', user_text))
+            sent_count = len(re.split(r"[.!?]+", user_text))
             avg_word_len = sum(len(w) for w in user_text.split()) / max(word_count, 1)
-            
+
             try:
-                nlp_mdl = spacy.load('en_core_web_sm')
+                nlp_mdl = spacy.load("en_core_web_sm")
                 doc = nlp_mdl(user_text)
                 num_tokens = max(len(doc), 1)
-                noun_ratio = sum(1 for token in doc if token.pos_ == 'NOUN') / num_tokens
-                adj_ratio = sum(1 for token in doc if token.pos_ == 'ADJ') / num_tokens
+                noun_ratio = (
+                    sum(1 for token in doc if token.pos_ == "NOUN") / num_tokens
+                )
+                adj_ratio = sum(1 for token in doc if token.pos_ == "ADJ") / num_tokens
                 ner_count = len(doc.ents)
                 readability = flesch_reading_ease(user_text)
             except:
                 noun_ratio = adj_ratio = ner_count = readability = 0.0
 
-            comparative_keywords = {'better', 'worse', 'more', 'less', 'than', 'compared', 'superior', 'inferior', 'greatest', 'best'}
-            comparative_count = len(set(user_text.lower().split()).intersection(comparative_keywords))
-            
-            meta_feat = np.array([[
-                user_rating, 
-                len(user_text), 
-                word_count, 
-                sent_count, 
-                avg_word_len, 
-                1, # Verified
-                sent_score,
-                noun_ratio, 
-                adj_ratio, 
-                ner_count, 
-                readability, 
-                comparative_count
-            ]])
-            
+            comparative_keywords = {
+                "better",
+                "worse",
+                "more",
+                "less",
+                "than",
+                "compared",
+                "superior",
+                "inferior",
+                "greatest",
+                "best",
+            }
+            comparative_count = len(
+                set(user_text.lower().split()).intersection(comparative_keywords)
+            )
+
+            meta_feat = np.array(
+                [
+                    [
+                        user_rating,
+                        len(user_text),
+                        word_count,
+                        sent_count,
+                        avg_word_len,
+                        1,  # Verified
+                        sent_score,
+                        noun_ratio,
+                        adj_ratio,
+                        ner_count,
+                        readability,
+                        comparative_count,
+                    ]
+                ]
+            )
+
             X_input = hstack([tfidf_feat, meta_feat])
-            
+
             prob = model.predict_proba(X_input)[0][1]
             pred = model.predict(X_input)[0]
-            
+
             if pred == 1:
                 st.success(f"High probability of being HELPFUL ({prob:.2%})")
             else:

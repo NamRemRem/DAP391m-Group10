@@ -27,9 +27,26 @@ lemmatizer = WordNetLemmatizer()
 
 stop_words = set(stopwords.words("english"))
 negative_words = {
-    'no', 'not', 'nor', 'never', 'none', "don't", "doesn't", "didn't", 
-    "won't", "wouldn't", "can't", "couldn't", "shouldn't", "isn't", 
-    "aren't", "wasn't", "weren't", "hasn't", "haven't", "hadn't"
+    "no",
+    "not",
+    "nor",
+    "never",
+    "none",
+    "don't",
+    "doesn't",
+    "didn't",
+    "won't",
+    "wouldn't",
+    "can't",
+    "couldn't",
+    "shouldn't",
+    "isn't",
+    "aren't",
+    "wasn't",
+    "weren't",
+    "hasn't",
+    "haven't",
+    "hadn't",
 }
 filtered_stopwords = stop_words - negative_words
 
@@ -45,15 +62,15 @@ def clean_text(text):
         return ""
     text = text.lower()
     text = contractions.fix(text)
-    text = re.sub(r'[^a-z0-9\s!?]', '', text)
+    text = re.sub(r"[^a-z0-9\s!?]", "", text)
     words = text.split()
     processed_words = []
-    
+
     for word in words:
         if word not in filtered_stopwords:
-            lemma = lemmatizer.lemmatize(word, pos='v') 
+            lemma = lemmatizer.lemmatize(word, pos="v")
             processed_words.append(lemma)
-            
+
     return " ".join(processed_words)
 
 
@@ -73,7 +90,7 @@ def avg_word_length(text):
 def count_sentences(text):
     if not isinstance(text, str):
         return 0
-    return len(re.split(r'[.!?]+', text))
+    return len(re.split(r"[.!?]+", text))
 
 
 def main():
