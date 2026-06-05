@@ -134,12 +134,12 @@ The models were evaluated based on their ability to retrieve the minority class 
 \midrule
 Logistic Regression & 73.41\% & 25.94\% & 59.16\% & 16.61\% \\
 Random Forest & 72.56\% & 7.87\% & 66.86\% & 4.18\% \\
-XGBoost (Optimized) & 65.83\% & 49.56\% & 42.27\% & 59.88\% \\
+XGBoost (Optimized) & 62.53\% & 49.99\% & 39.94\% & 66.81\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-As shown in Table~\ref{tab:performance}, the optimized XGBoost achieved a Recall of nearly 60\%, a massive improvement over standard Random Forest, effectively identifying helpful signals despite the data imbalance. Feature Importance analysis confirmed that VADER sentiment and Reading Ease played significant roles alongside standard review length.
+As shown in Table~\ref{tab:performance}, the optimized XGBoost achieved a Recall of nearly 67\%, a massive improvement over standard Random Forest, effectively identifying helpful signals despite the data imbalance. Feature Importance analysis confirmed that VADER sentiment and Reading Ease played significant roles alongside standard review length.
 
 % =========================
 % 6. Conclusion

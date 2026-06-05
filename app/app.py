@@ -154,30 +154,88 @@ def main():
     # ── Row 1: KPIs ───────────────────────────────────────────────────────────
     st.subheader("Model Performance")
     model_metrics = stats.get(model_choice, {})
-    col_a, col_b, col_c, col_d = st.columns(4)
-    col_a.metric("Accuracy", f"{model_metrics.get('Accuracy', 0):.2%}")
-    col_b.metric("F1-Score", f"{model_metrics.get('F1-Score', 0):.2%}")
-    col_c.metric("Precision", f"{model_metrics.get('Precision', 0):.2%}")
-    col_d.metric("Recall", f"{model_metrics.get('Recall', 0):.2%}")
+    before_metrics = stats.get("XGBoost_before", {})  # IMPROVED
+
+    # IMPROVED: show before/after table for XGBoost when pipeline has been re-run
+    if model_choice == "XGBoost" and before_metrics:  # IMPROVED
+        metric_names = ["Accuracy", "F1-Score", "Precision", "Recall"]  # IMPROVED
+        table_data = {  # IMPROVED
+            "Metric": metric_names,  # IMPROVED
+            "Before (default 0.5)": [  # IMPROVED
+                f"{before_metrics.get(m, 0):.2%}" for m in metric_names  # IMPROVED
+            ],  # IMPROVED
+            "After (scale_pos_weight + tuned threshold)": [  # FIXED: SMOTE removed
+                f"{model_metrics.get(m, 0):.2%}" for m in metric_names  # IMPROVED
+            ],  # IMPROVED
+        }  # IMPROVED
+        st.table(pd.DataFrame(table_data).set_index("Metric"))  # IMPROVED
+        threshold = model_metrics.get("Threshold")  # IMPROVED
+        if threshold is not None:  # IMPROVED
+            st.caption(f"⚙️ Optimal threshold used: **{threshold:.3f}**")  # IMPROVED
+    else:
+        col_a, col_b, col_c, col_d = st.columns(4)
+        col_a.metric("Accuracy", f"{model_metrics.get('Accuracy', 0):.2%}")
+        col_b.metric("F1-Score", f"{model_metrics.get('F1-Score', 0):.2%}")
+        col_c.metric("Precision", f"{model_metrics.get('Precision', 0):.2%}")
+        col_d.metric("Recall", f"{model_metrics.get('Recall', 0):.2%}")
     st.markdown("---")
 
-    # ── Row 2: Helpfulness Distribution + Rating Distribution ─────────────────
+
+    # ── Confusion Matrix ─────────────────────────────────────────────────
+    cm_data = model_metrics.get("CM")
+    if cm_data:
+        import plotly.graph_objects as go
+        st.subheader("🟦 Confusion Matrix")
+        st.caption(
+            "Based on y_test (true labels) vs y_pred on the held-out test set. "
+            "TP + FN = total Helpful samples in y_test (~2,799 = 20% of 13,992)."
+        )  # FIXED: corrected numbers for ground truth
+        
+        tn = cm_data.get("TN", 0)
+        fp = cm_data.get("FP", 0)
+        fn = cm_data.get("FN", 0)
+        tp = cm_data.get("TP", 0)
+        total_cm = tn + fp + fn + tp
+        
+        # Plotly heatmap renders rows bottom-to-top, so index 0 appears at bottom.
+        # To show "Actual Helpful" at top and "Actual Non-Helpful" at bottom,
+        # put Helpful row first in z (it will appear at top of the rendered chart).
+        z_data    = [[fn, tp], [tn, fp]]          # row0=Helpful, row1=Non-Helpful
+        y_labels  = ["Actual Helpful", "Actual Non-Helpful"]
+        text_data = [
+            [f"{fn:,}<br>({fn/total_cm:.1%})", f"{tp:,}<br>({tp/total_cm:.1%})"],
+            [f"{tn:,}<br>({tn/total_cm:.1%})", f"{fp:,}<br>({fp/total_cm:.1%})"],
+        ]
+        fig_cm = go.Figure(data=go.Heatmap(
+            z=z_data,
+            x=["Predicted Non-Helpful", "Predicted Helpful"],
+            y=y_labels,
+            text=text_data,
+            texttemplate="%{text}",
+            textfont={"size": 16},
+            colorscale="Blues",
+            showscale=False,
+        ))
+        fig_cm.update_layout(
+            xaxis_title="Predicted Label",
+            yaxis_title="Actual Label",
+            margin=dict(l=10, r=10, t=30, b=10),
+            height=320,
+        )
+        st.plotly_chart(fig_cm, use_container_width=True)
+        ann_col1, ann_col2, ann_col3, ann_col4 = st.columns(4)
+        ann_col1.metric("True Positive (TP)", f"{tp:,}", help="Helpful correctly predicted as Helpful")
+        ann_col2.metric("False Positive (FP)", f"{fp:,}", help="Non-Helpful incorrectly predicted as Helpful")
+        ann_col3.metric("True Negative (TN)", f"{tn:,}", help="Non-Helpful correctly predicted as Non-Helpful")
+        ann_col4.metric("False Negative (FN)", f"{fn:,}", help="Helpful incorrectly predicted as Non-Helpful")
+        st.markdown("---")
+
+
+
+    # REMOVED: Class Imbalance section removed per request
+    # ── Row 3: Rating Distribution + Feature Importance ───────────────────────
     col1, col2 = st.columns(2)
     with col1:
-        st.write("#### Predicted Helpfulness Distribution")
-        pie_data = df["predicted_helpful"].value_counts().reset_index()
-        pie_data.columns = ["Status", "Count"]
-        pie_data["Status"] = pie_data["Status"].map({1: "Helpful", 0: "Non-Helpful"})
-        fig_pie = px.pie(
-            pie_data,
-            values="Count",
-            names="Status",
-            color_discrete_sequence=["#2ecc71", "#e74c3c"],
-            hole=0.4,
-        )
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-    with col2:
         st.write("#### Rating Distribution")
         rating_counts = df["rating"].value_counts().sort_index().reset_index()
         rating_counts.columns = ["Rating", "Reviews"]
@@ -185,50 +243,18 @@ def main():
             rating_counts,
             x="Rating",
             y="Reviews",
-            color="Reviews",
-            color_continuous_scale="Viridis",
         )
+        fig_bar.update_traces(marker_color="steelblue")
+        fig_bar.update_layout(showlegend=False)
         st.plotly_chart(fig_bar, use_container_width=True)
 
-    # ── Row 3: Advanced Visualizations ────────────────────────────────────────
-    st.subheader("📈 Advanced Analysis")
-    col3, col4 = st.columns(2)
-
-    with col3:
-        st.write("#### Feature Correlation Heatmap")
-        heat_cols = [
-            "rating",
-            "word_count",
-            "sentiment_score",
-            "readability",
-            "noun_ratio",
-            "predicted_helpful",
-        ]
-        # Only include columns that exist in the dataframe
-        heat_cols = [c for c in heat_cols if c in df.columns]
-        if heat_cols:
-            corr = df[heat_cols].corr().round(2)
-            fig_heat = px.imshow(
-                corr,
-                text_auto=True,
-                color_continuous_scale="RdBu_r",
-                zmin=-1,
-                zmax=1,
-                title="Pearson Correlation",
-            )
-            fig_heat.update_layout(margin=dict(l=10, r=10, t=40, b=10))
-            st.plotly_chart(fig_heat, use_container_width=True)
-        else:
-            st.info("Correlation data not available in current predictions file.")
-
-    with col4:
+    with col2:
         st.write("#### Feature Importance (XGBoost)")
         xgb_path = MODEL_DIR / "xgboost.pkl"
         if xgb_path.exists():
             with open(xgb_path, "rb") as f:
                 xgb_model = pickle.load(f)
             if hasattr(xgb_model, "feature_importances_"):
-                # Meta features only (last N features of the combined matrix)
                 importances = xgb_model.feature_importances_
                 n_meta = len(META_COLS)
                 meta_importances = importances[-n_meta:]
@@ -247,28 +273,64 @@ def main():
                     color_continuous_scale="Teal",
                     title="Meta-Feature Importances",
                 )
-                fig_imp.update_layout(margin=dict(l=10, r=10, t=40, b=10))
+                fig_imp.update_layout(
+                    margin=dict(l=10, r=10, t=40, b=10),
+                    coloraxis_showscale=False  # FIXED: remove redundant colorbar
+                )
                 st.plotly_chart(fig_imp, use_container_width=True)
             else:
                 st.info("Feature importances not available for this model version.")
         else:
             st.info("XGBoost model not found. Run the pipeline first.")
 
-    # ── Row 4: Sentiment vs Helpfulness ───────────────────────────────────────
-    if "sentiment_score" in df.columns:
-        st.markdown("---")
-        st.write("#### Sentiment Score vs Helpfulness")
-        fig_violin = px.violin(
-            df,
-            y="sentiment_score",
-            x=df["predicted_helpful"].map({1: "Helpful", 0: "Non-Helpful"}),
-            color=df["predicted_helpful"].map({1: "Helpful", 0: "Non-Helpful"}),
-            box=True,
-            points="outliers",
-            color_discrete_map={"Helpful": "#2ecc71", "Non-Helpful": "#e74c3c"},
-            labels={"x": "Predicted Label", "y": "VADER Sentiment Score"},
+    # REMOVED: Feature Correlation Heatmap removed per request
+
+    # ── Row 5: Review Length vs Helpfulness ───────────────────────────────────
+    st.markdown("---")
+    st.write("#### Review Length vs Helpfulness")
+    st.caption(
+        "Review length (word count) is the top XGBoost feature — "
+        "longer reviews tend to be rated more helpful."
+    )
+    if "word_count" in df.columns:
+        bins = [0, 50, 100, 200, 500, float("inf")]
+        labels = ["0–50", "51–100", "101–200", "201–500", "500+"]
+        df_len = df.copy()
+        df_len["length_bin"] = pd.cut(
+            df_len["word_count"], bins=bins, labels=labels, right=True
         )
-        st.plotly_chart(fig_violin, use_container_width=True)
+        bin_stats = (
+            df_len.groupby("length_bin", observed=True)["predicted_helpful"]
+            .agg(["mean", "count"])
+            .reset_index()
+        )
+        bin_stats.columns = ["Word Count Bin", "Helpful %", "Review Count"]
+        bin_stats["Helpful %"] *= 100
+        bin_stats["Helpful % Rounded"] = bin_stats["Helpful %"].round(1)
+        fig_len = px.bar(
+            bin_stats,
+            x="Word Count Bin",
+            y="Helpful %",
+            color="Helpful %",
+            color_continuous_scale="Teal",
+            text=bin_stats["Helpful % Rounded"].map("{:.1f}%".format),
+            custom_data=["Helpful % Rounded", "Review Count"],
+            labels={"Word Count Bin": "Word Count", "Helpful %": "% Predicted Helpful"},
+        )
+        fig_len.update_traces(
+            textposition="outside",
+            hovertemplate="<b>%{x}</b><br>Helpful: %{customdata[0]:.1f}%<br>Reviews: %{customdata[1]:,}<extra></extra>",
+        )
+        fig_len.update_layout(
+            yaxis_ticksuffix="%",
+            margin=dict(l=10, r=10, t=30, b=10),
+        )
+        st.plotly_chart(fig_len, use_container_width=True)
+    else:
+        st.info("word_count column not found in predictions file.")
+
+    # REMOVED: Sentiment Score box plot removed per request
+
 
     # ── Row 5: Live Prediction + AI Insights ──────────────────────────────────
     st.markdown("---")
