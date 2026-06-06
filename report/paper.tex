@@ -73,7 +73,7 @@ FPT University\\[0.25em]
 % Abstract
 % =========================
 \begin{abstract}
-The proliferation of online reviews has made it difficult for consumers to identify truly helpful feedback. This paper presents a machine learning framework to predict review helpfulness using the Amazon Reviews 2023 (All Beauty) dataset. We extract structural, linguistic (POS, NER, Readability), and sentiment features, combined with TF-IDF n-grams, to train classifiers including Logistic Regression, Random Forest, and XGBoost. To handle class imbalance, we applied `scale_pos_weight`, increasing Recall significantly. Furthermore, we integrated an Explainable AI (XAI) layer using Google Gemini to provide transparent decision support. Our results demonstrate that combining linguistic complexity with robust gradient boosting and generative AI effectively distinguishes helpful reviews and provides actionable insights.
+The proliferation of online reviews has made it difficult for consumers to identify truly helpful feedback. This paper presents a machine learning framework to predict review helpfulness using the Amazon Reviews 2023 (All Beauty) dataset. We extract structural, linguistic (POS, NER, Readability), and sentiment features, combined with TF-IDF n-grams, to train classifiers including Logistic Regression, Random Forest, XGBoost, LinearSVC, and ComplementNB. To handle class imbalance, we applied `scale_pos_weight` and threshold tuning, increasing Recall significantly. Furthermore, we integrated an Explainable AI (XAI) layer using Google Gemini to provide transparent decision support. Our results demonstrate that combining linguistic complexity with robust algorithms and generative AI effectively distinguishes helpful reviews and provides actionable insights.
 \end{abstract}
 
 \noindent\textbf{Keywords:} Review Helpfulness, Natural Language Processing (NLP), XGBoost, Explainable AI (XAI), Class Imbalance.
@@ -109,7 +109,7 @@ Our feature space merges sparse textual matrices with dense metadata:
 \end{itemize}
 
 \subsection{Modeling and Generative XAI}
-We evaluated Logistic Regression, Random Forest, and XGBoost. For XGBoost, hyperparameters were tuned via `RandomizedSearchCV`, targeting the F1-Score metric instead of Accuracy, and incorporating `scale_pos_weight` to penalize minority-class errors. 
+We evaluated Logistic Regression, Random Forest, XGBoost, LinearSVC, and ComplementNB. For XGBoost, LinearSVC, and Naive Bayes, hyperparameters and thresholds were tuned via cross-validation, targeting the F1-Score metric instead of Accuracy, and incorporating class-weighting bounds (like `scale_pos_weight`) to penalize minority-class errors.
 To interpret the predictions, we introduced an XAI module that passes the review, predicted label, and probability score to the Google Gemini API, which generates a brief, structured justification for the classification.
 
 % =========================
@@ -135,11 +135,13 @@ The models were evaluated based on their ability to retrieve the minority class 
 Logistic Regression & 73.41\% & 25.94\% & 59.16\% & 16.61\% \\
 Random Forest & 72.56\% & 7.87\% & 66.86\% & 4.18\% \\
 XGBoost (Optimized) & 62.53\% & 49.99\% & 39.94\% & 66.81\% \\
+LinearSVC & 56.01\% & 48.09\% & 35.93\% & 72.67\% \\
+ComplementNB & 58.86\% & 48.59\% & 37.40\% & 69.35\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-As shown in Table~\ref{tab:performance}, the optimized XGBoost achieved a Recall of nearly 67\%, a massive improvement over standard Random Forest, effectively identifying helpful signals despite the data imbalance. Feature Importance analysis confirmed that VADER sentiment and Reading Ease played significant roles alongside standard review length.
+As shown in Table~\ref{tab:performance}, LinearSVC achieved the highest Recall at nearly 73\%, followed by ComplementNB and the optimized XGBoost, all representing massive improvements over standard Random Forest, effectively identifying helpful signals despite the data imbalance. Feature Importance analysis confirmed that VADER sentiment and Reading Ease played significant roles alongside standard review length.
 
 % =========================
 % 6. Conclusion

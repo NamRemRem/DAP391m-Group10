@@ -8,6 +8,7 @@
 | **Modeling** | "Training XGBoost on imbalance data (1.7% pos). How to use `scale_pos_weight` and `RandomizedSearchCV`?" | **ChatGPT-4o**: Provided formula and F1-scoring strategy. | Recall rose from 21% to ~60% after applying `scale_pos_weight`. |
 | **AI Integration** | "I want a 'Get AI Insights' feature where Gemini explains review helpfulness..." | **Google Gemini**: Provided `get_gemini_insights()` using `google-genai`. | Used `gemini-2.5-flash`. Improves transparency for predicting review quality. |
 | **Visualization** | "Add advanced viz: correlation heatmap, XGBoost feature importance, and violin plots." | **Claude 3.5**: Suggested `plotly.express.imshow()` and `px.violin()`. | Violin plots showed helpful reviews are more neutral/descriptive than emotional. |
+| **Pipeline Expansion** | "Add LinearSVC and MultinomialNB. TF-IDF causes negative values error with Naive Bayes." | **Gemini Adv**: Suggested `ComplementNB` with `np.abs()` preprocessing, and `CalibratedClassifierCV` for LinearSVC PR-tuning. | Successfully added 2 new robust models to our final 5-Model dashboard. |
 
 ---
 
