@@ -25,6 +25,7 @@ from sklearn.metrics import (
     precision_recall_curve,  # FIXED: kept for threshold tuning
 )
 from sklearn.model_selection import RandomizedSearchCV
+
 # FIXED: SMOTE removed entirely — do NOT import or use imblearn here
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -103,7 +104,9 @@ def main():
 
         # NEW MODEL: Handle deferred Naive Bayes initialization
         if name == "Naive Bayes":  # NEW MODEL
-            model = ComplementNB()  # NEW MODEL — handles negative values, good for imbalanced data
+            model = (
+                ComplementNB()
+            )  # NEW MODEL — handles negative values, good for imbalanced data
             model.fit(X_train_nb, y_train)  # NEW MODEL — use scaled data
         else:  # NEW MODEL
             # FIXED: train on original X_train, y_train — NO SMOTE
@@ -136,9 +139,7 @@ def main():
             # STEP 2: Threshold tuning via Precision-Recall curve  # FIXED
             y_prob = model.predict_proba(X_test)[:, 1]
             precisions, recalls, thresholds = precision_recall_curve(y_test, y_prob)
-            f1_scores = (
-                2 * (precisions * recalls) / (precisions + recalls + 1e-8)
-            )
+            f1_scores = 2 * (precisions * recalls) / (precisions + recalls + 1e-8)
             best_threshold = float(thresholds[f1_scores[:-1].argmax()])
             print(f"Best threshold (max F1 on PR curve): {best_threshold:.4f}")  # FIXED
 
@@ -147,7 +148,9 @@ def main():
         elif name == "LinearSVC":  # NEW MODEL
             # NEW MODEL: Threshold tuning via predict_proba (CalibratedClassifierCV)
             y_prob_svc = model.predict_proba(X_test_curr)[:, 1]  # NEW MODEL
-            precisions, recalls, thresholds = precision_recall_curve(y_test, y_prob_svc)  # NEW MODEL
+            precisions, recalls, thresholds = precision_recall_curve(
+                y_test, y_prob_svc
+            )  # NEW MODEL
             f1_scores = (  # NEW MODEL
                 2 * (precisions * recalls) / (precisions + recalls + 1e-8)  # NEW MODEL
             )  # NEW MODEL
@@ -158,7 +161,9 @@ def main():
         elif name == "Naive Bayes":  # NEW MODEL
             # NEW MODEL: Threshold tuning via predict_proba
             y_prob_nb = model.predict_proba(X_test_curr)[:, 1]  # NEW MODEL
-            precisions, recalls, thresholds = precision_recall_curve(y_test, y_prob_nb)  # NEW MODEL
+            precisions, recalls, thresholds = precision_recall_curve(
+                y_test, y_prob_nb
+            )  # NEW MODEL
             f1_scores = (  # NEW MODEL
                 2 * (precisions * recalls) / (precisions + recalls + 1e-8)  # NEW MODEL
             )  # NEW MODEL
@@ -204,7 +209,6 @@ def main():
         filename = name.lower().replace(" ", "_") + ".pkl"
         with open(OUT_DIR / filename, "wb") as f:
             pickle.dump(model, f)
-
 
         # Error Analysis for XGBoost
         if name == "XGBoost":

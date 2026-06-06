@@ -126,7 +126,14 @@ def main():
     # ── Sidebar ────────────────────────────────────────────────────────────────
     st.sidebar.header("Settings")
     model_choice = st.sidebar.selectbox(
-        "Choose Model", options=["XGBoost", "Random Forest", "Logistic Regression", "LinearSVC", "Naive Bayes"]  # NEW MODEL
+        "Choose Model",
+        options=[
+            "XGBoost",
+            "Random Forest",
+            "Logistic Regression",
+            "LinearSVC",
+            "Naive Bayes",
+        ],  # NEW MODEL
     )
     st.sidebar.markdown("---")
 
@@ -154,55 +161,66 @@ def main():
     # ── Row 1: All Models Comparison Table ─────────────────────────────────  # NEW MODEL
     st.subheader("Model Performance")  # NEW MODEL
     model_metrics = stats.get(model_choice, {})
-    all_model_names = ["Logistic Regression", "Random Forest", "XGBoost", "LinearSVC", "Naive Bayes"]  # NEW MODEL
+    all_model_names = [
+        "Logistic Regression",
+        "Random Forest",
+        "XGBoost",
+        "LinearSVC",
+        "Naive Bayes",
+    ]  # NEW MODEL
     metric_names = ["Accuracy", "F1-Score", "Precision", "Recall"]  # NEW MODEL
     comparison_data = {"Model": all_model_names}  # NEW MODEL
     for m in metric_names:  # NEW MODEL
         comparison_data[m] = [  # NEW MODEL
-            f"{stats.get(name, {}).get(m, 0):.2%}" for name in all_model_names  # NEW MODEL
+            f"{stats.get(name, {}).get(m, 0):.2%}"
+            for name in all_model_names  # NEW MODEL
         ]  # NEW MODEL
     st.table(pd.DataFrame(comparison_data).set_index("Model"))  # NEW MODEL
     threshold = model_metrics.get("Threshold")  # IMPROVED
     if threshold is not None:  # IMPROVED
-        st.caption(f"⚙️ Selected model ({model_choice}) optimal threshold: **{threshold:.3f}**")  # NEW MODEL
+        st.caption(
+            f"⚙️ Selected model ({model_choice}) optimal threshold: **{threshold:.3f}**"
+        )  # NEW MODEL
     st.markdown("---")
-
 
     # ── Confusion Matrix ─────────────────────────────────────────────────
     cm_data = model_metrics.get("CM")
     if cm_data:
         import plotly.graph_objects as go
+
         st.subheader("🟦 Confusion Matrix")
         st.caption(
             "Based on y_test (true labels) vs y_pred on the held-out test set. "
             "TP + FN = total Helpful samples in y_test (~2,799 = 20% of 13,992)."
         )  # FIXED: corrected numbers for ground truth
-        
+
         tn = cm_data.get("TN", 0)
         fp = cm_data.get("FP", 0)
         fn = cm_data.get("FN", 0)
         tp = cm_data.get("TP", 0)
         total_cm = tn + fp + fn + tp
-        
+
         # Plotly heatmap renders rows bottom-to-top, so index 0 appears at bottom.
         # To show "Actual Helpful" at top and "Actual Non-Helpful" at bottom,
         # put Helpful row first in z (it will appear at top of the rendered chart).
-        z_data    = [[fn, tp], [tn, fp]]          # row0=Helpful, row1=Non-Helpful
-        y_labels  = ["Actual Helpful", "Actual Non-Helpful"]
+        z_data = [[fn, tp], [tn, fp]]  # row0=Helpful, row1=Non-Helpful
+        y_labels = ["Actual Helpful", "Actual Non-Helpful"]
         text_data = [
             [f"{fn:,}<br>({fn/total_cm:.1%})", f"{tp:,}<br>({tp/total_cm:.1%})"],
             [f"{tn:,}<br>({tn/total_cm:.1%})", f"{fp:,}<br>({fp/total_cm:.1%})"],
         ]
-        fig_cm = go.Figure(data=go.Heatmap(
-            z=z_data,
-            x=["Predicted Non-Helpful", "Predicted Helpful"],
-            y=y_labels,
-            text=text_data,
-            texttemplate="%{text}",
-            textfont={"size": 16},
-            colorscale="Blues",
-            showscale=False,
-        ))
+        fig_cm = go.Figure(
+            data=go.Heatmap(
+                z=z_data,
+                x=["Predicted Non-Helpful", "Predicted Helpful"],
+                y=y_labels,
+                text=text_data,
+                texttemplate="%{text}",
+                textfont={"size": 16},
+                colorscale="Blues",
+                showscale=False,
+            )
+        )
         fig_cm.update_layout(
             xaxis_title="Predicted Label",
             yaxis_title="Actual Label",
@@ -211,13 +229,27 @@ def main():
         )
         st.plotly_chart(fig_cm, use_container_width=True)
         ann_col1, ann_col2, ann_col3, ann_col4 = st.columns(4)
-        ann_col1.metric("True Positive (TP)", f"{tp:,}", help="Helpful correctly predicted as Helpful")
-        ann_col2.metric("False Positive (FP)", f"{fp:,}", help="Non-Helpful incorrectly predicted as Helpful")
-        ann_col3.metric("True Negative (TN)", f"{tn:,}", help="Non-Helpful correctly predicted as Non-Helpful")
-        ann_col4.metric("False Negative (FN)", f"{fn:,}", help="Helpful incorrectly predicted as Non-Helpful")
+        ann_col1.metric(
+            "True Positive (TP)",
+            f"{tp:,}",
+            help="Helpful correctly predicted as Helpful",
+        )
+        ann_col2.metric(
+            "False Positive (FP)",
+            f"{fp:,}",
+            help="Non-Helpful incorrectly predicted as Helpful",
+        )
+        ann_col3.metric(
+            "True Negative (TN)",
+            f"{tn:,}",
+            help="Non-Helpful correctly predicted as Non-Helpful",
+        )
+        ann_col4.metric(
+            "False Negative (FN)",
+            f"{fn:,}",
+            help="Helpful incorrectly predicted as Non-Helpful",
+        )
         st.markdown("---")
-
-
 
     # REMOVED: Class Imbalance section removed per request
     # ── Row 3: Rating Distribution + Feature Importance ───────────────────────
@@ -262,7 +294,7 @@ def main():
                 )
                 fig_imp.update_layout(
                     margin=dict(l=10, r=10, t=40, b=10),
-                    coloraxis_showscale=False  # FIXED: remove redundant colorbar
+                    coloraxis_showscale=False,  # FIXED: remove redundant colorbar
                 )
                 st.plotly_chart(fig_imp, use_container_width=True)
             else:
@@ -317,7 +349,6 @@ def main():
         st.info("word_count column not found in predictions file.")
 
     # REMOVED: Sentiment Score box plot removed per request
-
 
     # ── Row 5: Live Prediction + AI Insights ──────────────────────────────────
     st.markdown("---")
@@ -404,12 +435,12 @@ def main():
                 )
 
                 X_input = hstack([tfidf_feat, meta_feat])
-                
+
                 if model_choice == "Naive Bayes":  # NEW MODEL
                     X_input_nb = X_input.copy()  # NEW MODEL
                     X_input_nb.data = np.abs(X_input_nb.data)  # NEW MODEL
                     X_input = X_input_nb  # NEW MODEL
-                    
+
                 prob = model.predict_proba(X_input)[0][1]
                 pred = model.predict(X_input)[0]
 
