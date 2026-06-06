@@ -126,7 +126,7 @@ def main():
     # ── Sidebar ────────────────────────────────────────────────────────────────
     st.sidebar.header("Settings")
     model_choice = st.sidebar.selectbox(
-        "Choose Model", options=["XGBoost", "Random Forest", "Logistic Regression"]
+        "Choose Model", options=["XGBoost", "Random Forest", "Logistic Regression", "LinearSVC", "Naive Bayes"]  # NEW MODEL
     )
     st.sidebar.markdown("---")
 
@@ -151,33 +151,20 @@ def main():
     )
     st.sidebar.write("**Best Model**: XGBoost + scale_pos_weight")
 
-    # ── Row 1: KPIs ───────────────────────────────────────────────────────────
-    st.subheader("Model Performance")
+    # ── Row 1: All Models Comparison Table ─────────────────────────────────  # NEW MODEL
+    st.subheader("Model Performance")  # NEW MODEL
     model_metrics = stats.get(model_choice, {})
-    before_metrics = stats.get("XGBoost_before", {})  # IMPROVED
-
-    # IMPROVED: show before/after table for XGBoost when pipeline has been re-run
-    if model_choice == "XGBoost" and before_metrics:  # IMPROVED
-        metric_names = ["Accuracy", "F1-Score", "Precision", "Recall"]  # IMPROVED
-        table_data = {  # IMPROVED
-            "Metric": metric_names,  # IMPROVED
-            "Before (default 0.5)": [  # IMPROVED
-                f"{before_metrics.get(m, 0):.2%}" for m in metric_names  # IMPROVED
-            ],  # IMPROVED
-            "After (scale_pos_weight + tuned threshold)": [  # FIXED: SMOTE removed
-                f"{model_metrics.get(m, 0):.2%}" for m in metric_names  # IMPROVED
-            ],  # IMPROVED
-        }  # IMPROVED
-        st.table(pd.DataFrame(table_data).set_index("Metric"))  # IMPROVED
-        threshold = model_metrics.get("Threshold")  # IMPROVED
-        if threshold is not None:  # IMPROVED
-            st.caption(f"⚙️ Optimal threshold used: **{threshold:.3f}**")  # IMPROVED
-    else:
-        col_a, col_b, col_c, col_d = st.columns(4)
-        col_a.metric("Accuracy", f"{model_metrics.get('Accuracy', 0):.2%}")
-        col_b.metric("F1-Score", f"{model_metrics.get('F1-Score', 0):.2%}")
-        col_c.metric("Precision", f"{model_metrics.get('Precision', 0):.2%}")
-        col_d.metric("Recall", f"{model_metrics.get('Recall', 0):.2%}")
+    all_model_names = ["Logistic Regression", "Random Forest", "XGBoost", "LinearSVC", "Naive Bayes"]  # NEW MODEL
+    metric_names = ["Accuracy", "F1-Score", "Precision", "Recall"]  # NEW MODEL
+    comparison_data = {"Model": all_model_names}  # NEW MODEL
+    for m in metric_names:  # NEW MODEL
+        comparison_data[m] = [  # NEW MODEL
+            f"{stats.get(name, {}).get(m, 0):.2%}" for name in all_model_names  # NEW MODEL
+        ]  # NEW MODEL
+    st.table(pd.DataFrame(comparison_data).set_index("Model"))  # NEW MODEL
+    threshold = model_metrics.get("Threshold")  # IMPROVED
+    if threshold is not None:  # IMPROVED
+        st.caption(f"⚙️ Selected model ({model_choice}) optimal threshold: **{threshold:.3f}**")  # NEW MODEL
     st.markdown("---")
 
 
@@ -417,6 +404,12 @@ def main():
                 )
 
                 X_input = hstack([tfidf_feat, meta_feat])
+                
+                if model_choice == "Naive Bayes":  # NEW MODEL
+                    X_input_nb = X_input.copy()  # NEW MODEL
+                    X_input_nb.data = np.abs(X_input_nb.data)  # NEW MODEL
+                    X_input = X_input_nb  # NEW MODEL
+                    
                 prob = model.predict_proba(X_input)[0][1]
                 pred = model.predict(X_input)[0]
 

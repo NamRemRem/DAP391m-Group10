@@ -13,6 +13,10 @@ from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 from scipy.sparse import hstack
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import LinearSVC  # NEW MODEL
+from sklearn.naive_bayes import ComplementNB  # NEW MODEL
+from sklearn.calibration import CalibratedClassifierCV  # NEW MODEL
+from sklearn.preprocessing import MaxAbsScaler  # NEW MODEL
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -77,21 +81,44 @@ def main():
             random_state=42,
             n_jobs=-1,
         ),
+        "LinearSVC": CalibratedClassifierCV(  # NEW MODEL
+            LinearSVC(  # NEW MODEL
+                class_weight="balanced",  # NEW MODEL — equivalent to scale_pos_weight
+                max_iter=2000,  # NEW MODEL
+                random_state=42,  # NEW MODEL
+            ),  # NEW MODEL
+            cv=3,  # NEW MODEL
+        ),  # NEW MODEL
+        "Naive Bayes": "deferred",  # NEW MODEL — needs MaxAbsScaler, handled below
     }
+
+    # NEW MODEL: Prepare non-negative data for ComplementNB (fixes negative sentiment/TFIDF values)
+    X_train_nb = X_train.copy()  # NEW MODEL
+    X_train_nb.data = np.abs(X_train_nb.data)  # NEW MODEL
+    X_test_nb = X_test.copy()  # NEW MODEL
+    X_test_nb.data = np.abs(X_test_nb.data)  # NEW MODEL
 
     for name, model in models.items():
         print(f"Training {name}...")
 
-        # FIXED: train XGBoost on original X_train, y_train — NO SMOTE
-        model.fit(X_train, y_train)
+        # NEW MODEL: Handle deferred Naive Bayes initialization
+        if name == "Naive Bayes":  # NEW MODEL
+            model = ComplementNB()  # NEW MODEL — handles negative values, good for imbalanced data
+            model.fit(X_train_nb, y_train)  # NEW MODEL — use scaled data
+        else:  # NEW MODEL
+            # FIXED: train on original X_train, y_train — NO SMOTE
+            model.fit(X_train, y_train)
 
         # Extract best estimator if it's a grid search
         if isinstance(model, RandomizedSearchCV):
             print(f"Best params for {name}: {model.best_params_}")
             model = model.best_estimator_
 
+        # Select correct test data  # NEW MODEL
+        X_test_curr = X_test_nb if name == "Naive Bayes" else X_test  # NEW MODEL
+
         # Default predictions at 0.5 threshold (used as "before" for XGBoost)
-        y_pred_default = model.predict(X_test)
+        y_pred_default = model.predict(X_test_curr)
 
         if name == "XGBoost":
             # Save "before" stats (default 0.5 threshold, no tuning)  # FIXED
@@ -116,6 +143,29 @@ def main():
             print(f"Best threshold (max F1 on PR curve): {best_threshold:.4f}")  # FIXED
 
             y_pred = (y_prob >= best_threshold).astype(int)  # FIXED
+
+        elif name == "LinearSVC":  # NEW MODEL
+            # NEW MODEL: Threshold tuning via predict_proba (CalibratedClassifierCV)
+            y_prob_svc = model.predict_proba(X_test_curr)[:, 1]  # NEW MODEL
+            precisions, recalls, thresholds = precision_recall_curve(y_test, y_prob_svc)  # NEW MODEL
+            f1_scores = (  # NEW MODEL
+                2 * (precisions * recalls) / (precisions + recalls + 1e-8)  # NEW MODEL
+            )  # NEW MODEL
+            best_threshold = float(thresholds[f1_scores[:-1].argmax()])  # NEW MODEL
+            print(f"LinearSVC best threshold: {best_threshold:.4f}")  # NEW MODEL
+            y_pred = (y_prob_svc >= best_threshold).astype(int)  # NEW MODEL
+
+        elif name == "Naive Bayes":  # NEW MODEL
+            # NEW MODEL: Threshold tuning via predict_proba
+            y_prob_nb = model.predict_proba(X_test_curr)[:, 1]  # NEW MODEL
+            precisions, recalls, thresholds = precision_recall_curve(y_test, y_prob_nb)  # NEW MODEL
+            f1_scores = (  # NEW MODEL
+                2 * (precisions * recalls) / (precisions + recalls + 1e-8)  # NEW MODEL
+            )  # NEW MODEL
+            best_threshold = float(thresholds[f1_scores[:-1].argmax()])  # NEW MODEL
+            print(f"Naive Bayes best threshold: {best_threshold:.4f}")  # NEW MODEL
+            y_pred = (y_prob_nb >= best_threshold).astype(int)  # NEW MODEL
+
         else:
             y_pred = y_pred_default
             best_threshold = None
@@ -146,7 +196,7 @@ def main():
             "CM": {"TN": tn, "FP": fp, "FN": fn, "TP": tp},
         }
 
-        if name == "XGBoost" and best_threshold is not None:
+        if best_threshold is not None:  # FIXED + NEW MODEL
             entry["Threshold"] = best_threshold  # FIXED
 
         model_stats[name] = entry
@@ -154,6 +204,7 @@ def main():
         filename = name.lower().replace(" ", "_") + ".pkl"
         with open(OUT_DIR / filename, "wb") as f:
             pickle.dump(model, f)
+
 
         # Error Analysis for XGBoost
         if name == "XGBoost":
